@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pioneer World Discovery</title>
+<style>
+body{margin:0;background:#f3f6fb;font-family:Arial,sans-serif;color:#17253d}
+header{background:#173e73;color:white;padding:24px 18px;text-align:center}
+header h1{font-size:24px;margin:0 0 8px}
+header p{margin:0;color:#dce9ff}
+main{max-width:720px;margin:24px auto;padding:0 16px}
+article{background:white;border-radius:14px;padding:20px;margin:16px 0;box-shadow:0 3px 12px #0001}
+.tag{color:#1761ad;font-size:14px;font-weight:bold}
+h2{font-size:20px}
+small{color:#64748b}
+#status{color:#64748b}
+</style>
+</head>
+<body>
+<header>
+<h1>🌍 Pioneer World Discovery</h1>
+<p>Khám phá và chia sẻ câu chuyện từ cộng đồng</p>
+</header>
+<main>
+<h2>📖 Bảng tin cộng đồng</h2>
+<p id="status">Đang tải bài viết...</p>
+<div id="feed"></div>
+</main>
+<script>
+const url="https://fojmuyzpkongsrovualm.supabase.co";
+const key="DAN_PUBLISHABLE_KEY_VAO_DAY";
+async function loadStories(){
+ const status=document.getElementById("status");
+ const feed=document.getElementById("feed");
+ if(key==="DAN_PUBLISHABLE_KEY_VAO_DAY"){
+  status.textContent="Giao diện đã sẵn sàng. Chưa cấu hình Supabase Publishable Key.";
+  return;
+ }
+ try{
+  const response=await fetch(url+"/rest/v1/stories?select=id,title,content,country,category,created_at&order=created_at.desc&limit=50",{
+   headers:{"apikey":key}
+  });
+  if(!response.ok)throw new Error("HTTP "+response.status);
+  const stories=await response.json();
+  status.textContent=stories.length?"":"Chưa có bài viết.";
+  stories.forEach(story=>{
+   const card=document.createElement("article");
+   const category=document.createElement("div");
+   category.className="tag";
+   category.textContent=story.category||"Khám phá";
+   const title=document.createElement("h2");
+   title.textContent=story.title;
+   const content=document.createElement("p");
+   content.textContent=story.content;
+   const country=document.createElement("small");
+   country.textContent=story.country||"";
+   card.append(category,title,content,country);
+   feed.appendChild(card);
+  });
+ }catch(error){
+  status.textContent="Không tải được bài viết: "+error.message;
+ }
+}
+loadStories();
+</script>
+</body>
+  </html>
