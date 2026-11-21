@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Đăng nhập - Pioneer World Discovery</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f3f6fb;color:#17253d;margin:0}
+header{background:#173e73;color:white;text-align:center;padding:24px 12px}
+main{max-width:430px;margin:25px auto;padding:0 16px}
+section{background:white;border-radius:14px;padding:22px;box-shadow:0 3px 12px #0001}
+input,button{box-sizing:border-box;width:100%;padding:13px;margin:8px 0;border-radius:8px;font-size:16px}
+input{border:1px solid #cbd5e1}
+button{border:0;background:#1761ad;color:white;cursor:pointer}
+button:disabled{opacity:.5}
+.secondary{background:#64748b}
+#message{white-space:pre-wrap;overflow-wrap:anywhere}
+a{color:#1761ad}
+</style>
+</head>
+<body>
+<header><h2>🌍 Pioneer World Discovery</h2><p>Tài khoản cộng đồng</p></header>
+<main><section>
+<h2>Đăng ký / Đăng nhập</h2>
+<input id="email" type="email" placeholder="Địa chỉ email" autocomplete="email">
+<input id="password" type="password" placeholder="Mật khẩu (ít nhất 6 ký tự)" autocomplete="current-password">
+<button id="signup">Đăng ký tài khoản</button>
+<button id="login">Đăng nhập</button>
+<button id="logout" class="secondary" hidden>Đăng xuất</button>
+<p id="message" role="status"></p>
+<p><a href="./">← Trở về Bảng tin</a></p>
+</section></main>
+<script>
+const SUPABASE_URL="https://fojmuyzpkongsrovualm.supabase.co";
+const SUPABASE_KEY="sb_publishable_LZs9kuTRGoHsWhgdbL6COQ_KAw7BTHi";
+const base=SUPABASE_URL+"/auth/v1";
+const msg=document.getElementById("message");
+const email=document.getElementById("email");
+const password=document.getElementById("password");
+const signup=document.getElementById("signup");
+const login=document.getElementById("login");
+const logout=document.getElementById("logout");
+const storageKey="pioneer-auth-session";
+function show(s){msg.textContent=s}
+function setLoggedIn(yes){
+ signup.hidden=login.hidden=yes;
+ logout.hidden=!yes;
+}
+async function request(path,body){
+ const response=await fetch(base+path,{
+  method:"POST",
+  headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+  body:JSON.stringify(body)
+ });
+ const data=await response.json();
+ if(!response.ok)throw new Error(data.msg||data.error_description||data.message||"Yêu cầu thất bại");
+ return data;
+}
+function values(){
+ const e=email.value.trim();
+ const p=password.value;
+ if(!e||!p)throw new Error("Vui lòng nhập email và mật khẩu.");
+ if(p.length<6)throw new Error("Mật khẩu phải có ít nhất 6 ký tự.");
+ return {email:e,password:p};
+}
+signup.onclick=async()=>{
+ try{
+  const v=values();
+  const data=await request("/signup",{...v,options:{emailRedirectTo:location.origin+location.pathname}});
+  if(data.access_token){
+   sessionStorage.setItem(storageKey,JSON.stringify(data));
+   setLoggedIn(true);
+   show("Đăng ký thành công và đã đăng nhập.");
+  }else{
+   show("Đã gửi yêu cầu đăng ký. Hãy kiểm tra email để xác nhận tài khoản.");
+  }
+ }catch(e){show(e.message)}
+};
+login.onclick=async()=>{
+ try{
+  const data=await request("/token?grant_type=password",values());
+  sessionStorage.setItem(storageKey,JSON.stringify(data));
+  setLoggedIn(true);
+  password.value="";
+  show("Đăng nhập thành công.");
+ }catch(e){show(e.message)}
+};
+logout.onclick=()=>{
+ sessionStorage.removeItem(storageKey);
+ setLoggedIn(false);
+ show("Đã đăng xuất trên trình duyệt này.");
+};
+if(SUPABASE_KEY==="DAN_PUBLISHABLE_KEY_VAO_DAY"){
+ show("Chưa cấu hình Supabase Publishable Key.");
+}else{
+ setLoggedIn(!!sessionStorage.getItem(storageKey));
+}
+</script>
+</body>
+  </html>
