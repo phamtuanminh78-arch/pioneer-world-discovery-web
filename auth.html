@@ -68,7 +68,7 @@ signup.onclick=async()=>{
   const v=values();
   const data=await request("/signup",{...v,options:{emailRedirectTo:location.origin+location.pathname}});
   if(data.access_token){
-   sessionStorage.setItem(storageKey,JSON.stringify(data));
+   localStorage.setItem(storageKey,JSON.stringify(data));
    setLoggedIn(true);
    show("Đăng ký thành công và đã đăng nhập.");
   }else{
@@ -79,21 +79,21 @@ signup.onclick=async()=>{
 login.onclick=async()=>{
  try{
   const data=await request("/token?grant_type=password",values());
-  sessionStorage.setItem(storageKey,JSON.stringify(data));
+  localStorage.setItem(storageKey,JSON.stringify(data));
   setLoggedIn(true);
   password.value="";
   show("Đăng nhập thành công.");
  }catch(e){show(e.message)}
 };
 logout.onclick=()=>{
- sessionStorage.removeItem(storageKey);
+ localStorage.removeItem(storageKey);
  setLoggedIn(false);
  show("Đã đăng xuất trên trình duyệt này.");
 };
 if(SUPABASE_KEY==="DAN_PUBLISHABLE_KEY_VAO_DAY"){
  show("Chưa cấu hình Supabase Publishable Key.");
 }else{
- setLoggedIn(!!sessionStorage.getItem(storageKey));
+ setLoggedIn(!!localStorage.getItem(storageKey));
 }
 </script>
 </body>
