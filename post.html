@@ -218,9 +218,50 @@ async function initialize() {
       }
     );
 
-    if (!response.ok) {
-      throw new Error("Phiên đăng nhập đã hết hạn.");
+    
+if (!response.ok) {
+  if (response.status === 401) {
+    const latestSession = getSession();
+
+    if (
+      latestSession?.access_token &&
+      latestSession.access_token !== session.access_token
+    ) {
+      accessToken = latestSession.access_token;
+    } else {
+      const refreshed = await refreshPostSession(session);
+      accessToken = refreshed.access_token;
     }
+
+    const retryResponse = await fetch(
+      SUPABASE_URL + "/auth/v1/user",
+      {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + accessToken
+        }
+      }
+    );
+
+    if (!retryResponse.ok) {
+      throw new Error("Không thể xác minh phiên đăng nhập mới.");
+    }
+
+    const refreshedUser = await retryResponse.json();
+
+    if (!refreshedUser.id) {
+      throw new Error("Không xác định được tài khoản.");
+    }
+
+    currentUserId = refreshedUser.id;
+    statusEl.textContent = "Đã đăng nhập. Bạn có thể viết bài.";
+    form.hidden = false;
+    return;
+  }
+
+  throw new Error("Không thể xác minh phiên đăng nhập.");
+}
+
 
     const user = await response.json();
 
