@@ -138,12 +138,35 @@ if(SUPABASE_KEY==="DAN_PUBLISHABLE_KEY_VAO_DAY"){
       }
     );
 
-    if (response.ok) {
+if (response.ok) {
+  setLoggedIn(true);
+} else if (response.status === 401) {
+  try {
+    await refreshSession(session);
+    setLoggedIn(true);
+    show("Phiên đăng nhập đã được làm mới.");
+  } catch (refreshError) {
+    // Kiểm tra xem tab khác đã làm mới phiên chưa
+    const latest = JSON.parse(
+      localStorage.getItem(storageKey) || "null"
+    );
+
+    if (
+      latest?.access_token &&
+      latest.access_token !== session.access_token
+    ) {
       setLoggedIn(true);
     } else {
-      localStorage.removeItem(storageKey);
       setLoggedIn(false);
+      show("Không thể làm mới phiên. Vui lòng thử đăng nhập lại.");
     }
+  }
+} else {
+  setLoggedIn(false);
+  show("Không thể xác minh phiên. Vui lòng thử lại.");
+}
+
+
   } catch (error) {
     setLoggedIn(false);
     show("Không thể kiểm tra phiên đăng nhập.");
