@@ -169,9 +169,26 @@ if (response.ok) {
   setLoggedIn(true);
 } else if (response.status === 401) {
   try {
-    await refreshSession(session);
-    setLoggedIn(true);
-    show("Phiên đăng nhập đã được làm mới.");
+ 
+const refreshed = await refreshSession(session);
+
+const verifyResponse = await fetch(
+  SUPABASE_URL + "/auth/v1/user",
+  {
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: "Bearer " + refreshed.access_token
+    }
+  }
+);
+
+if (!verifyResponse.ok) {
+  throw new Error("Không thể xác minh token mới.");
+}
+
+setLoggedIn(true);
+show("Phiên đăng nhập đã được làm mới.");
+
   } catch (refreshError) {
     // Kiểm tra xem tab khác đã làm mới phiên chưa
     const latest = JSON.parse(
