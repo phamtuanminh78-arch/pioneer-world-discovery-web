@@ -156,6 +156,43 @@ function getSession() {
   }
 }
 
+
+async function refreshPostSession(session) {
+  if (!session?.refresh_token) {
+    throw new Error("Không có refresh token.");
+  }
+
+  const response = await fetch(
+    SUPABASE_URL + "/auth/v1/token?grant_type=refresh_token",
+    {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        refresh_token: session.refresh_token
+      })
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok || !data.access_token || !data.refresh_token) {
+    throw new Error(
+      data.error_description ||
+      data.msg ||
+      "Không thể làm mới phiên đăng nhập."
+    );
+  }
+
+  localStorage.setItem(
+    SESSION_KEY,
+    JSON.stringify(data)
+  );
+
+  return data;
+}
 async function initialize() {
   if (!SUPABASE_KEY.startsWith("sb_publishable_")) {
     statusEl.textContent = "Chưa cấu hình Publishable Key.";
