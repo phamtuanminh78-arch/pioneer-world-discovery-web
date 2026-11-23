@@ -30,6 +30,11 @@ a{color:#1761ad}
 <p id="message" role="status"></p>
 <p><a href="./">← Trở về Bảng tin</a></p>
 </section></main>
+ 
+<button id="testRefresh" type="button">
+  Kiểm tra làm mới phiên
+</button>
+
 <script>
 const SUPABASE_URL="https://fojmuyzpkongsrovualm.supabase.co";
 const SUPABASE_KEY="sb_publishable_LZs9kuTRGoHsWhgdbL6COQ_KAw7BTHi";
@@ -78,6 +83,44 @@ async function refreshSession(session) {
 
   return data;
 }
+
+document.getElementById("testRefresh").onclick = async () => {
+  const button = document.getElementById("testRefresh");
+  button.disabled = true;
+
+  try {
+    const session = JSON.parse(
+      localStorage.getItem(storageKey) || "null"
+    );
+
+    if (!session?.refresh_token) {
+      throw new Error("Không tìm thấy phiên đăng nhập.");
+    }
+
+    const refreshed = await refreshSession(session);
+
+    const response = await fetch(
+      SUPABASE_URL + "/auth/v1/user",
+      {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + refreshed.access_token
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Token mới không được xác minh.");
+    }
+
+    show("THÀNH CÔNG: Đã làm mới và xác minh phiên.");
+    setLoggedIn(true);
+  } catch (error) {
+    show("THẤT BẠI: " + error.message);
+  } finally {
+    button.disabled = false;
+  }
+};
 
 function values(){
  const e=email.value.trim();
