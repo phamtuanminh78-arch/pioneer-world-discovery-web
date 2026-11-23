@@ -93,7 +93,40 @@ logout.onclick=()=>{
 if(SUPABASE_KEY==="DAN_PUBLISHABLE_KEY_VAO_DAY"){
  show("Chưa cấu hình Supabase Publishable Key.");
 }else{
- setLoggedIn(!!localStorage.getItem(storageKey));
+ 
+(async () => {
+  try {
+    const session = JSON.parse(
+      localStorage.getItem(storageKey) || "null"
+    );
+
+    if (!session?.access_token) {
+      setLoggedIn(false);
+      return;
+    }
+
+    const response = await fetch(
+      SUPABASE_URL + "/auth/v1/user",
+      {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + session.access_token
+        }
+      }
+    );
+
+    if (response.ok) {
+      setLoggedIn(true);
+    } else {
+      localStorage.removeItem(storageKey);
+      setLoggedIn(false);
+    }
+  } catch (error) {
+    setLoggedIn(false);
+    show("Không thể kiểm tra phiên đăng nhập.");
+  }
+})();
+
 }
 </script>
 </body>
