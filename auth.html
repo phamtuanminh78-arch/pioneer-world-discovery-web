@@ -60,6 +60,15 @@ async function request(path,body){
  return data;
 }
  
+function isSessionExpired(session) {
+  if (!session?.expires_at) {
+    return false;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  return now >= session.expires_at - 60;
+}
+
 async function refreshSession(session) {
   if (!session?.refresh_token) {
     throw new Error("Không có refresh token.");
