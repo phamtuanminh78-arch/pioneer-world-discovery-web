@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bài viết của tôi - Pioneer World Discovery</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f7f6;
+  color: #222;
+}
+
+header {
+  background: #163d35;
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+header h2 {
+  margin: 0 0 10px;
+}
+
+header p {
+  margin: 0;
+}
+
+main {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 15px;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+a {
+  color: #176b52;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.story {
+  background: white;
+  padding: 16px;
+  margin-bottom: 15px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #00000012;
+  overflow-wrap: anywhere;
+}
+
+.story h3 {
+  margin-top: 0;
+}
+
+button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.edit-btn {
+  background: #176b52;
+  color: white;
+}
+
+.delete-btn {
+  background: #dc3545;
+  color: white;
+}
+
+#status {
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2>🌍 Pioneer World Discovery</h2>
+  <p>Bài viết của tôi</p>
+</header>
+
+<main>
+
+  <nav>
+    <a href="./">← Bảng tin</a>
+    <a href="post.html">＋ Viết bài mới</a>
+    <a href="auth.html">Tài khoản</a>
+  </nav>
+
+  <h2>Quản lý bài viết</h2>
+
+  <p id="status" role="status">
+    Đang chuẩn bị kết nối...
+  </p>
+
+  <div id="stories"></div>
+
+</main>
+<script>
+const SUPABASE_URL =
+  "https://fojmuyzpkongsrovualm.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_LZs9kuTRGoHsWhgdbL6COQ_KAw7BTHi";
+
+const SESSION_KEY = "pioneer-auth-session";
+
+const statusEl = document.getElementById("status");
+const storiesEl = document.getElementById("stories");
+
+let accessToken = null;
+let currentUserId = null;
+
+function show(message) {
+  statusEl.textContent = message;
+}
+
+function getSession() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(SESSION_KEY) || "null"
+    );
+  } catch (error) {
+    return null;
+  }
+}
+  async function refreshStoriesSession(session) {
+  if (!session?.refresh_token) {
+    throw new Error("Bạn cần đăng nhập lại.");
+  }
+
+  const response = await fetch(
+    SUPABASE_URL + "/auth/v1/token?grant_type=refresh_token",
+    {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        refresh_token: session.refresh_token
+      })
+    }
+  );
+
+  const data = await response.json();
+
+  if (
+    !response.ok ||
+    !data.access_token ||
+    !data.refresh_token
+  ) {
+    throw new Error("Không thể làm mới phiên đăng nhập.");
+  }
+
+  localStorage.setItem(
+    SESSION_KEY,
+    JSON.stringify(data)
+  );
+
+  return data;
+  }
+  async function verifyStoriesSession() {
+  let session = getSession();
+
+  if (
+    !session?.access_token &&
+    !session?.refresh_token
+  ) {
+    throw new Error("Bạn cần đăng nhập trước.");
+  }
+
+  if (
+    !session.access_token ||
+    (
+      session.expires_at &&
+      Math.floor(Date.now() / 1000) >=
+      session.expires_at - 60
+    )
+  ) {
+    session = await refreshStoriesSession(session);
+  }
+
+  let response = await fetch(
+    SUPABASE_URL + "/auth/v1/user",
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: "Bearer " + session.access_token
+      }
+    }
+  );
+
+  if (
+    response.status === 401 &&
+    session.refresh_token
+  ) {
+    session = await refreshStoriesSession(session);
+
+    response = await fetch(
+      SUPABASE_URL + "/auth/v1/user",
+      {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + session.access_token
+        }
+      }
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error("Không thể xác minh phiên đăng nhập.");
+  }
+
+  const user = await response.json();
+
+  if (!user.id) {
+    throw new Error("Không xác định được tài khoản.");
+  }
+
+  accessToken = session.access_token;
+  currentUserId = user.id;
+
+  return user;
+  }
+  async function loadMyStories() {
+  storiesEl.replaceChildren();
+
+  show("Đang tải bài viết của bạn...");
+
+  try {
+    await verifyStoriesSession();
+
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/stories?select=*" +
+      "&author_id=eq." +
+      encodeURIComponent(currentUserId) +
+      "&order=created_at.desc",
+      {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + accessToken
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Không thể tải bài viết.");
+    }
+
+    const stories = await response.json();
+
+    if (!Array.isArray(stories)) {
+      throw new Error("Dữ liệu không hợp lệ.");
+    }
+
+    if (stories.length === 0) {
+      show("Bạn chưa có bài viết nào.");
+      return;
+    }
+
+    stories.forEach(function(story) {
+      const card = document.createElement("article");
+      card.className = "story-card";
+
+      const title = document.createElement("h3");
+      title.textContent = story.title;
+
+      const content = document.createElement("p");
+      content.textContent = story.content;
+
+      const meta = document.createElement("p");
+      meta.textContent =
+        (story.country || "") + " | " +
+        (story.category || "");
+
+      card.append(title, content, meta);
+      storiesEl.appendChild(card);
+    });
+
+    show("Bạn có " + stories.length + " bài viết.");
+
+  } catch (error) {
+    storiesEl.replaceChildren();
+    show(error.message);
+  }
+}
+
+loadMyStories();
+</script>
+</body>
+  </html>
