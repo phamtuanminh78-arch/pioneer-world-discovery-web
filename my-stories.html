@@ -86,6 +86,73 @@ button {
   background: white;
   border-radius: 8px;
 }
+  #editDialog {
+  width: 92%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  border: none;
+  border-radius: 12px;
+  padding: 20px;
+  background: white;
+  color: #222;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+}
+
+#editDialog::backdrop {
+  background: rgba(0,0,0,0.55);
+}
+
+#editDialog h2 {
+  margin-top: 0;
+  color: #163d35;
+}
+
+#editForm label {
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 6px;
+  font-weight: bold;
+}
+
+#editForm input,
+#editForm textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  font-family: inherit;
+}
+
+#editForm textarea {
+  resize: vertical;
+}
+
+#editStatus {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+#saveEditBtn,
+#cancelEditBtn {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+#saveEditBtn {
+  background: #163d35;
+  color: white;
+}
+
+#cancelEditBtn {
+  background: #e5e7eb;
+  color: #333;
+}
 </style>
 </head>
 
@@ -113,6 +180,38 @@ button {
   <div id="stories"></div>
 
 </main>
+  <dialog id="editDialog">
+  <h2>✏️ Chỉnh sửa bài viết</h2>
+
+  <form id="editForm">
+
+    <label for="editTitle">Tiêu đề</label>
+    <input id="editTitle" type="text" required>
+
+    <label for="editContent">Nội dung</label>
+    <textarea id="editContent" rows="6" required></textarea>
+
+    <label for="editCountry">Quốc gia</label>
+    <input id="editCountry" type="text">
+
+    <label for="editCategory">Danh mục</label>
+    <input id="editCategory" type="text">
+
+    <label for="editImageUrl">Đường dẫn hình ảnh</label>
+    <input id="editImageUrl" type="url">
+
+    <p id="editStatus" role="status"></p>
+
+    <button id="saveEditBtn" type="submit">
+      💾 Lưu thay đổi
+    </button>
+
+    <button id="cancelEditBtn" type="button">
+      Hủy bỏ
+    </button>
+
+  </form>
+  </dialog>
 <script>
 const SUPABASE_URL =
   "https://fojmuyzpkongsrovualm.supabase.co";
@@ -127,11 +226,35 @@ const storiesEl = document.getElementById("stories");
 
 let accessToken = null;
 let currentUserId = null;
+const editDialog = document.getElementById("editDialog");
+const editForm = document.getElementById("editForm");
+const editTitle = document.getElementById("editTitle");
+const editContent = document.getElementById("editContent");
+const editCountry = document.getElementById("editCountry");
+const editCategory = document.getElementById("editCategory");
+const editImageUrl = document.getElementById("editImageUrl");
+const editStatus = document.getElementById("editStatus");
+const saveEditBtn = document.getElementById("saveEditBtn");
+const cancelEditBtn = document.getElementById("cancelEditBtn");
 
+let editingStoryId = null;
 function show(message) {
   statusEl.textContent = message;
 }
+function openEditDialog(story) {
+  editingStoryId = story.id;
 
+  editTitle.value = story.title || "";
+  editContent.value = story.content || "";
+  editCountry.value = story.country || "";
+  editCategory.value = story.category || "";
+  editImageUrl.value = story.image_url || "";
+
+  editStatus.textContent = "";
+  saveEditBtn.disabled = false;
+
+  editDialog.showModal();
+  }
 function getSession() {
   try {
     return JSON.parse(
@@ -318,7 +441,7 @@ deleteBtn.style.background = "#dc2626";
   btn.style.flex = "1";
 });
 editBtn.addEventListener("click", function() {
-  alert("Sửa bài viết: " + story.title);
+  openEditDialog(story);
 });
 actions.append(editBtn, deleteBtn);
 card.appendChild(actions);
@@ -332,7 +455,15 @@ card.appendChild(actions);
     show(error.message);
   }
 }
-
+cancelEditBtn.addEventListener("click", function() {
+  editDialog.close();
+  editingStoryId = null;
+  editStatus.textContent = "";
+});
+  editForm.addEventListener("submit", function(event) {
+  event.preventDefault();
+  editStatus.textContent = "Chức năng lưu đang được phát triển.";
+});
 loadMyStories();
 </script>
 </body>
