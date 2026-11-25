@@ -317,7 +317,9 @@ deleteBtn.style.background = "#dc2626";
   btn.style.cursor = "pointer";
   btn.style.flex = "1";
 });
-
+editBtn.addEventListener("click", function() {
+  alert("Sửa bài viết: " + story.title);
+});
 actions.append(editBtn, deleteBtn);
 card.appendChild(actions);
       storiesEl.appendChild(card);
