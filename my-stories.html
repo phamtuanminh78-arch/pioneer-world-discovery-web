@@ -460,9 +460,83 @@ cancelEditBtn.addEventListener("click", function() {
   editingStoryId = null;
   editStatus.textContent = "";
 });
-  editForm.addEventListener("submit", function(event) {
+  editForm.addEventListener("submit", async function(event) {
   event.preventDefault();
-  editStatus.textContent = "Chức năng lưu đang được phát triển.";
+
+  if (!editingStoryId || saveEditBtn.disabled) {
+    return;
+  }
+
+  const storyId = editingStoryId;
+
+  const updatedStory = {
+    title: editTitle.value.trim(),
+    content: editContent.value.trim(),
+    country: editCountry.value.trim(),
+    category: editCategory.value.trim(),
+    image_url: editImageUrl.value.trim() || null
+  };
+
+  if (!updatedStory.title || !updatedStory.content) {
+    editStatus.textContent = "Vui lòng nhập tiêu đề và nội dung.";
+    return;
+  }
+
+  saveEditBtn.disabled = true;
+  cancelEditBtn.disabled = true;
+  editStatus.textContent = "Đang lưu thay đổi...";
+
+  function preventClose(event) {
+    event.preventDefault();
+  }
+
+  editDialog.addEventListener("cancel", preventClose);
+
+  try {
+    await verifyStoriesSession();
+
+    const response = await fetch(
+      SUPABASE_URL +
+      "/rest/v1/stories?id=eq." +
+      encodeURIComponent(storyId) +
+      "&author_id=eq." +
+      encodeURIComponent(currentUserId),
+      {
+        method: "PATCH",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + accessToken,
+          "Content-Type": "application/json",
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify(updatedStory)
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Không thể lưu thay đổi.");
+    }
+
+    const result = await response.json();
+
+    if (!Array.isArray(result) || result.length !== 1) {
+      throw new Error("Không tìm thấy bài viết được phép sửa.");
+    }
+
+    editingStoryId = null;
+    editDialog.close();
+
+    await loadMyStories();
+
+    alert("Đã lưu thay đổi thành công!");
+
+  } catch (error) {
+    editStatus.textContent = error.message;
+  } finally {
+    saveEditBtn.disabled = false;
+    cancelEditBtn.disabled = false;
+    editDialog.removeEventListener("cancel", preventClose);
+  }
 });
 loadMyStories();
 </script>
