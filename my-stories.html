@@ -443,6 +443,21 @@ deleteBtn.style.background = "#dc2626";
 editBtn.addEventListener("click", function() {
   openEditDialog(story);
 });
+      
+deleteBtn.addEventListener("click", function() {
+  const confirmed = window.confirm(
+    "Bạn có chắc chắn muốn xóa bài viết này?\n\n" +
+    "Tiêu đề: " + story.title + "\n\n" +
+    "Thao tác này không thể hoàn tác."
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  alert("Đây là bước kiểm thử. Bài viết chưa bị xóa.");
+});
+
 actions.append(editBtn, deleteBtn);
 card.appendChild(actions);
       storiesEl.appendChild(card);
